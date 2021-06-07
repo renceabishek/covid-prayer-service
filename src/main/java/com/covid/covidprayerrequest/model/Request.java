@@ -14,4 +14,5 @@ public class Request {
     private String date;
     private String description;
     private String by;
+    private String status;
 }

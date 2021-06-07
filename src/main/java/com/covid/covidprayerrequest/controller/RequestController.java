@@ -12,9 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,9 +38,13 @@ public class RequestController {
         this.firebaseJsonProperties = firebaseJsonProperties;
     }
 
+    String datePattern = "MM/dd/yyyy HH:mm:ss";
+
     @PostMapping("/request")
     public void CreateRequest(@RequestBody Request request) {
             DatabaseReference postsRef = mainDatabaseReference.child(firebaseJsonProperties.getRequest());
+            request.setStatus("wait");
+            request.setDate(new SimpleDateFormat(datePattern).format(Calendar.getInstance().getTime()));
             DatabaseReference newPostRef = postsRef.push();
             newPostRef.setValueAsync(request);
     }
@@ -57,8 +62,11 @@ public class RequestController {
                 }).map(monoProfile -> monoProfile.entrySet().stream()
                         .map(k -> {
                             Request request = objectMapper.convertValue(k.getValue(), Request.class);
-                            return new Request(request.get_for(), request.getDate(), request.getDescription(), request.getBy());
+                            return new Request(request.get_for(), request.getDate(), request.getDescription(), request.getBy(), request.getStatus());
                         })
-                        .sorted(Comparator.comparing(Request::getBy)).collect(Collectors.toList()));
+                        .sorted(Comparator.comparing(Request::getStatus).reversed()
+                                        .thenComparing((Request r)->LocalDate.parse(r.getDate(),
+                                DateTimeFormatter.ofPattern(datePattern, Locale.ENGLISH))).reversed())
+                        .collect(Collectors.toList()));
     }
 }

@@ -2,6 +2,7 @@ package com.covid.covidprayerrequest.controller;
 
 import com.covid.covidprayerrequest.config.FirebaseJsonProperties;
 import com.covid.covidprayerrequest.model.Request;
+import com.covid.covidprayerrequest.model.Status;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.DatabaseReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,9 +65,22 @@ public class RequestController {
                             Request request = objectMapper.convertValue(k.getValue(), Request.class);
                             return new Request(request.get_for(), request.getDate(), request.getDescription(), request.getBy(), request.getStatus());
                         })
-                        .sorted(Comparator.comparing(Request::getStatus).reversed()
+                        .sorted(Comparator.comparing((Request status)->convert_enum_status(status.getStatus())).reversed()
                                         .thenComparing((Request r)->LocalDate.parse(r.getDate(),
                                 DateTimeFormatter.ofPattern(datePattern, Locale.ENGLISH))).reversed())
                         .collect(Collectors.toList()));
+    }
+
+    private Status convert_enum_status(String status) {
+        if(status.equalsIgnoreCase("wait")) {
+            return Status.WAIT;
+        }
+        else if(status.equalsIgnoreCase("inprogress")) {
+            return Status.INPROGRESS;
+        } else if(status.equalsIgnoreCase("yes")) {
+            return Status.YES;
+        } else {
+            return null;
+        }
     }
 }
